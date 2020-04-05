@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Configuration;
 using System.Linq;
-using System.Reflection;
-using Raven.Client;
-using Raven.Client.Document;
-using Raven.Imports.Newtonsoft.Json;
+using Newtonsoft.Json;
+using Raven.Client.Documents;
+using Raven.Client.ServerWide.Operations;
 
 namespace RoutingVisualization
 {
@@ -39,7 +38,7 @@ namespace RoutingVisualization
         {
             var store = new DocumentStore
             {
-                Url = url,
+                Urls = new[] { url },
                 Conventions =
                 {
                     // Prevents $type from interfering with deserialization of EndpointDetails
@@ -51,7 +50,7 @@ namespace RoutingVisualization
 
             try
             {
-                store.DatabaseCommands.GetBuildNumber();
+                _ = store.Maintenance.Server.Send(new GetBuildNumberOperation());
             }
             catch
             {
@@ -60,7 +59,7 @@ namespace RoutingVisualization
                 throw;
             }
 
-            Console.WriteLine($"Reading messages from {store.Url}");
+            Console.WriteLine($"Reading messages from {url}");
 
             return store;
         }
@@ -73,7 +72,7 @@ namespace RoutingVisualization
             //var physicalEndpoints = new PhysicalRoutingNodeStrategy();
 
             var endpoints = logicalEndpoints;
-            
+
             // All messages of the same type that come from the same sender will be collapsed into a single message node
             var collapseFromSender = new CollaseMessagesFromSameSenderMessageNodeStrategy(endpoints);
 
